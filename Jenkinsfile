@@ -15,35 +15,29 @@ pipeline {
     }
 
     stages {
-        stage("Build docker image") {
+        stage("Yarn install") {
             steps {
                 script {
-                    echo "=== building image ==="
-                    sh "docker build -t $DOCKER_REPO/$CONTAINER_NAME:$DOCKER_CONTAINER_TAG ."
+                    echo "=== building ==="
+                    sh "yarn install"
                 }
             }
         }
-        stage("Push docker image") {
+        stage("Yarn build") {
             steps {
                 echo "=== pushing image ==="
-                sh "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"
-                sh "docker push $DOCKER_REPO/$CONTAINER_NAME:$DOCKER_CONTAINER_TAG"
+                sh "sudo yarn build"
             }
         }
-        stage("Update and preparation docker-compose") {
+        stage("Deploy") {
             steps {
-                echo "=== stop the old docker-compose ==="
-                sh "docker-compose down"
-                echo "=== docker pull ==="
-                sh "docker-compose pull"
+                echo "=== deploying ==="
+                sh "sudo cp -ra ./dist/. /var/www/BotGusMelfordCom"
             }
         }
-        stage("Up docker-compose") {
+        stage("Nginx restart") {
             steps {
-                echo "=== running docker-compose ==="
-                sh "docker-compose up -d"
-                echo "=== docker prune ==="
-                sh "docker system prune -a -f"
+                sh "docker-compose -f ~/Projects/Nginx/docker-compose.yml up -d"
             }
         }
     }
