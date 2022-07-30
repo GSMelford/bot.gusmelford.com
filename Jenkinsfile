@@ -26,7 +26,7 @@ pipeline {
         stage("Yarn build") {
             steps {
                 echo "=== pushing image ==="
-                sh "sudo yarn build"
+                sh "sudo yarn build -S $SUDO_PASSWORD"
             }
         }
         stage("Deploy") {
