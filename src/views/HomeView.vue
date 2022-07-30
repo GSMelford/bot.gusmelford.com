@@ -24,7 +24,7 @@ export default defineComponent({
     }
   },
   async created () {
-    this.systemName = systemConstants.systemName + ' ' + 'v2.0'
+    this.systemName = systemConstants.systemName + ' ' + 'v2.0 Beta'
     const response = await contentCollectorMethod.getInfo(false)
     this.contentCount = response.data.contentCount
     this.contentDurationMinutes = response.data.contentDuration / 60
