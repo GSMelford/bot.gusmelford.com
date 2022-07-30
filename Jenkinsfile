@@ -37,7 +37,7 @@ pipeline {
         }
         stage("Nginx restart") {
             steps {
-                sh "docker-compose -f /home/pi/Projects/Nginx/docker-compose.yml up -d"
+                sh "docker restart nginx_nginx_1"
             }
         }
     }
