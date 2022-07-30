@@ -1,0 +1,8 @@
+version: "3.3"
+
+services:
+  gusmelfordbooks.clientapp:
+    image: $DOCKER_REPO/$CONTAINER_NAME:$DOCKER_CONTAINER_TAG
+    restart: always
+    ports:
+      - $PORT:80
