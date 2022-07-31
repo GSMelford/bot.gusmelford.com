@@ -5,14 +5,14 @@
       <div v-for="user in this.currentContentInfo.users" :key="user.id" class="users-info">
         <p>{{`${user.firstName} ${user.lastName}`}}</p>
       </div>
+      <p style="color: snow">Content # {{this.currentContentInfo.number}}</p>
       <a class="content-original-link" :href="currentContentInfo.originalLink">Click here to open link</a>
-      <p class="accompanying-commentary">Video comment: </p>
-      <p class="accompanying-commentary">{{this.currentContentInfo.accompanyingCommentary}}</p>
+      <p v-if="this.currentContentInfo.accompanyingCommentary" class="accompanying-commentary">Video comment: <br><br>{{this.currentContentInfo.accompanyingCommentary}}</p>
     </div>
     <div class="video-container">
-      <video :src="contentLink" controls loop autoplay ref="videoElement"></video>
+      <video :src="contentLink" controls loop ref="videoElement"></video>
     </div>
-    <div class="log-container" style="color: snow; overflow: scroll">
+    <div class="log-container" style="color: snow; overflow: auto">
       <div v-for="messageLog in this.logMessages" :key="messageLog.id" class="users-info">
         <p>{{messageLog.message}}</p>
       </div>
@@ -22,13 +22,12 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
+import { HubConnectionBuilder } from '@microsoft/signalr'
 import { systemConstants } from '@/api/constants'
 import { contentCollectorMethod } from '@/api/contentCollector/contentCollectorRequest'
 
 const connection = new HubConnectionBuilder()
   .withUrl(`${systemConstants.baseURL}content-viewer-hub`)
-  .configureLogging(LogLevel.Information)
   .build()
 
 let contents: any[]
@@ -43,20 +42,22 @@ export default defineComponent({
       contentCursor: 0,
       contentLink: '',
       isPaused: false,
-      volume: 100,
+      volume: 1,
+      maxWidth: '',
       logMessages: Array<{ id: string, message: string }>(),
       currentContentInfo: {
         users: Array<{ id: string, firstName: string, lastName: string }>(),
         originalLink: '',
-        accompanyingCommentary: ''
+        accompanyingCommentary: '',
+        number: ''
       }
     }
   },
   created () {
     window.addEventListener('keydown', async ev => {
-      if (ev.key === 'ArrowRight') {
+      if (ev.key === 'ArrowRight' || ev.key === 'd' || ev.key === '>') {
         await connection.invoke('SwitchVideo', 'next')
-      } else if (ev.key === 'ArrowLeft') {
+      } else if (ev.key === 'ArrowLeft' || ev.key === 'a' || ev.key === '<') {
         await connection.invoke('SwitchVideo', 'prev')
       } else if (ev.key === 'p') {
         this.isPaused = !this.isPaused
@@ -78,6 +79,7 @@ export default defineComponent({
       contents = (await contentCollectorMethod.getContents(false)).data
       currentContent = contents[0]
       this.contentLink = this.buildContentLink(currentContent)
+      this.setVideoSize(contents[this.contentCursor])
       this.systemName = systemConstants.systemName + ' ' + 'ContentCollector'
     },
     updateCurrentContentInfo () {
@@ -86,6 +88,7 @@ export default defineComponent({
       })
       this.currentContentInfo.originalLink = currentContent.originalLink
       this.currentContentInfo.accompanyingCommentary = currentContent.accompanyingCommentary
+      this.currentContentInfo.number = currentContent.number
     },
     buildContentLink (currentContent: any) : string {
       return `${systemConstants.baseURL}${currentContent.contentPath}`
@@ -96,7 +99,7 @@ export default defineComponent({
     async syncCurrentVideoTime () {
       let tempTime = 0
       const videoEl = this.$refs.videoElement as HTMLVideoElement
-      connection.on('ChangeVideoTime', (currentTime: number) => {
+      await connection.on('ChangeVideoTime', (currentTime: number) => {
         if (this.decimalAdjust(tempTime, -1) !== this.decimalAdjust(currentTime, -1)) {
           videoEl.currentTime = currentTime
         }
@@ -105,9 +108,12 @@ export default defineComponent({
         tempTime = videoEl.currentTime
         await connection.invoke('ChangeVideoTime', tempTime)
       })
+      videoEl.onloadeddata = async ev => {
+        await connection.invoke('ReadyWatchVideo')
+      }
     },
-    syncSwitchVideo () {
-      connection.on('SwitchVideo', (direction: string) => {
+    async syncSwitchVideo () {
+      await connection.on('SwitchVideo', (direction: string) => {
         const videoEl = this.$refs.videoElement as HTMLVideoElement
         videoEl.volume = this.volume
         if (direction === 'next') {
@@ -116,20 +122,27 @@ export default defineComponent({
           } else {
             this.contentCursor++
           }
-          this.contentLink = this.buildContentLink(contents[this.contentCursor])
         } else if (direction === 'prev') {
           if (this.contentCursor - 1 < 0) {
             this.contentCursor = contents.length - 1
           } else {
             this.contentCursor--
           }
-          this.contentLink = this.buildContentLink(contents[this.contentCursor])
         }
+
+        currentContent = contents[this.contentCursor]
+        this.contentLink = this.buildContentLink(contents[this.contentCursor])
+        this.setVideoSize(contents[this.contentCursor])
+        this.updateCurrentContentInfo()
       })
     },
-    syncPauseVideo () {
+    setVideoSize (content: any) {
+      const clientHeight = document.body.clientHeight
+      this.maxWidth = `${((clientHeight / content.height) * content.width)}px`
+    },
+    async syncPauseVideo () {
       const videoEl = this.$refs.videoElement as HTMLVideoElement
-      connection.on('PauseVideo', (isPaused: number) => {
+      await connection.on('PauseVideo', (isPaused: number) => {
         if (isPaused) {
           videoEl.pause()
         } else {
@@ -139,7 +152,7 @@ export default defineComponent({
     },
     setVolumeEvent () {
       const videoEl = this.$refs.videoElement as HTMLVideoElement
-      videoEl.onvolumechange = _ => { this.volume = videoEl.volume }
+      videoEl.onvolumechange = ev => { this.volume = videoEl.volume }
     },
     decimalAdjust (value: any, exp: any) {
       if (typeof exp === 'undefined' || +exp === 0) {
@@ -206,7 +219,7 @@ video {
 
 .video-container {
   height: 100vh;
-  max-width: 400px;
+  max-width: v-bind(maxWidth);
   margin: 0 auto;
   display: flex;
   align-items: center;

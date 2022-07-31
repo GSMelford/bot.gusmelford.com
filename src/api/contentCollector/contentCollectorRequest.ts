@@ -9,5 +9,9 @@ export const contentCollectorMethod = {
   async getInfo (isViewed: boolean): Promise<AxiosResponse> {
     const url = `api/content-collector/info?isViewed=${isViewed}`
     return await httpClient.get(url)
+  },
+  async allVideoViewed (): Promise<AxiosResponse> {
+    const url = 'api/content-collector/allVideoViewed'
+    return await httpClient.get(url)
   }
 }

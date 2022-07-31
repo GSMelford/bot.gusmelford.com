@@ -1,11 +1,13 @@
 <template>
   <div class="main-container">
     <div class="system-name">
-      {{systemName}}
+      <p class="text-stylish">{{systemName}}</p>
     </div>
     <div class="apps-container">
-      <button class="myButton" @click="goToContentViewer">New contents {{contentCount}} for {{contentDurationMinutes}} minutes</button>
+      <button class="myButton" @click="goToContentViewer">New contents {{contentCount}}</button><br><br>
+      <p class="text-stylish">for {{contentDurationMinutes}} minutes</p>
     </div>
+    <button class="myButton" @click="allVideoViewed">All video viewed</button>
   </div>
 </template>
 
@@ -23,15 +25,18 @@ export default defineComponent({
       contentDurationMinutes: 0
     }
   },
-  async created () {
+  async mounted () {
     this.systemName = systemConstants.systemName + ' ' + 'v2.0 Beta'
     const response = await contentCollectorMethod.getInfo(false)
     this.contentCount = response.data.contentCount
-    this.contentDurationMinutes = (response.data.duration as number) / 60
+    this.contentDurationMinutes = Math.ceil((response.data.duration as number) / 60)
   },
   methods: {
     goToContentViewer () {
       this.$router.push('content-viewer')
+    },
+    async allVideoViewed () {
+      // await contentCollectorMethod.allVideoViewed()
     }
   }
 })
@@ -63,6 +68,12 @@ body{
   width: 100%;
   text-align: center;
   margin: 24px;
+}
+
+.text-stylish {
+  font-family: 'Bebas Neue', cursive;
+  color: #fff;
+  font-size: 36px;
 }
 
 button, button::after {
@@ -103,6 +114,12 @@ button::after {
 button:hover::after {
   animation: 1s glitch;
   animation-timing-function: steps(2, end);
+}
+
+button:hover {
+  animation: 1s glitch;
+  animation-timing-function: steps(2, end);
+  cursor: pointer;
 }
 
 @keyframes glitch {
