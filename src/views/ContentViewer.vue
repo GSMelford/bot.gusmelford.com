@@ -10,7 +10,7 @@
       <p v-if="this.currentContentInfo.accompanyingCommentary" class="accompanying-commentary">Video comment: <br><br>{{this.currentContentInfo.accompanyingCommentary}}</p>
     </div>
     <div class="video-container">
-      <video :src="contentLink" controls loop ref="videoElement"></video>
+      <video :src="contentLink" controls loop autoplay ref="videoElement"></video>
     </div>
     <div class="log-container" style="color: snow; overflow: auto">
       <div v-for="messageLog in this.logMessages" :key="messageLog.id" class="users-info">
