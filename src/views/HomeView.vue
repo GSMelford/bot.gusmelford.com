@@ -27,7 +27,7 @@ export default defineComponent({
     this.systemName = systemConstants.systemName + ' ' + 'v2.0 Beta'
     const response = await contentCollectorMethod.getInfo(false)
     this.contentCount = response.data.contentCount
-    this.contentDurationMinutes = response.data.contentDuration / 60
+    this.contentDurationMinutes = (response.data.duration as number) / 60
   },
   methods: {
     goToContentViewer () {
