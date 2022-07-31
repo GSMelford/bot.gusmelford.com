@@ -108,9 +108,6 @@ export default defineComponent({
         tempTime = videoEl.currentTime
         await connection.invoke('ChangeVideoTime', tempTime)
       })
-      videoEl.onloadeddata = async ev => {
-        await connection.invoke('ReadyWatchVideo')
-      }
     },
     async syncSwitchVideo () {
       await connection.on('SwitchVideo', (direction: string) => {
