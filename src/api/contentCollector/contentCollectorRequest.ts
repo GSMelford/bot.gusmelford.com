@@ -2,16 +2,12 @@ import { AxiosResponse } from 'axios'
 import { httpClient } from '@/api/axiosConfig'
 
 export const contentCollectorMethod = {
-  async getContents (isViewed: boolean): Promise<AxiosResponse> {
-    const url = `api/content-collector/contents?isViewed=${isViewed}`
+  async getContentInfo (roomCode: string): Promise<AxiosResponse> {
+    const url = `api/content-collector/room/content/info?roomCode=${roomCode}`
     return await httpClient.get(url)
   },
-  async getInfo (isViewed: boolean): Promise<AxiosResponse> {
-    const url = `api/content-collector/info?isViewed=${isViewed}`
-    return await httpClient.get(url)
-  },
-  async allVideoViewed (): Promise<AxiosResponse> {
-    const url = 'api/content-collector/allVideoViewed'
-    return await httpClient.get(url)
+  async createRoom (isViewed: boolean): Promise<AxiosResponse> {
+    const url = `api/content-collector/room?isViewed=${isViewed}`
+    return await httpClient.post(url)
   }
 }

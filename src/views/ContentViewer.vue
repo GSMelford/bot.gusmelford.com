@@ -25,12 +25,13 @@ import { defineComponent } from 'vue'
 import { HubConnectionBuilder } from '@microsoft/signalr'
 import { systemConstants } from '@/api/constants'
 import { contentCollectorMethod } from '@/api/contentCollector/contentCollectorRequest'
+import { mapGetters } from 'vuex'
 
 const connection = new HubConnectionBuilder()
   .withUrl(`${systemConstants.baseURL}content-viewer-hub`)
   .build()
 
-let contents: any[]
+let tempTime = 0
 let currentContent: any
 
 export default defineComponent({
@@ -38,9 +39,9 @@ export default defineComponent({
   data () {
     return {
       video: HTMLVideoElement,
+      contentLink: '',
       systemName: '',
       contentCursor: 0,
-      contentLink: '',
       isPaused: false,
       volume: 1,
       maxWidth: '',
@@ -53,34 +54,69 @@ export default defineComponent({
       }
     }
   },
-  created () {
-    window.addEventListener('keydown', async ev => {
-      if (ev.key === 'ArrowRight' || ev.key === 'd' || ev.key === '>') {
-        await connection.invoke('SwitchVideo', 'next')
-      } else if (ev.key === 'ArrowLeft' || ev.key === 'a' || ev.key === '<') {
-        await connection.invoke('SwitchVideo', 'prev')
-      } else if (ev.key === 'p') {
-        this.isPaused = !this.isPaused
-        await connection.invoke('PauseVideo', this.isPaused)
-      }
-    })
-  },
+  computed: mapGetters(['getRoomCode']),
   mounted: async function () {
-    await this.initContents()
-    this.updateCurrentContentInfo()
-    await this.syncCurrentVideoTime()
-    await this.syncSwitchVideo()
-    await this.syncPauseVideo()
-    this.setVolumeEvent()
+    this.systemName = systemConstants.systemName + ' ' + 'ContentCollector'
+    await this.setEvents()
+    await this.setSync()
+    await this.updateVideo()
     await connection.start()
   },
   methods: {
-    async initContents () {
-      contents = (await contentCollectorMethod.getContents(false)).data
-      currentContent = contents[0]
-      this.contentLink = this.buildContentLink(currentContent)
-      this.setVideoSize(contents[this.contentCursor])
-      this.systemName = systemConstants.systemName + ' ' + 'ContentCollector'
+    async setEvents () {
+      const videoEl = this.$refs.videoElement as HTMLVideoElement
+      videoEl.addEventListener('seeked', await this.onSeeked)
+      window.addEventListener('keydown', await this.onKeyDown)
+      videoEl.onvolumechange = this.onVolumeChange
+    },
+    async onSeeked () {
+      const videoEl = this.$refs.videoElement as HTMLVideoElement
+      tempTime = videoEl.currentTime
+      await connection.invoke('ChangeVideoTime', tempTime)
+    },
+    onVolumeChange () {
+      const videoEl = this.$refs.videoElement as HTMLVideoElement
+      this.volume = videoEl.volume
+    },
+    async onKeyDown (ev: any) {
+      if (ev.key === 'ArrowRight' || ev.key === 'd' || ev.key === '>') {
+        await connection.invoke('NextContent', this.getRoomCode)
+      } else if (ev.key === 'ArrowLeft' || ev.key === 'a' || ev.key === '<') {
+        await connection.invoke('PrevContent', this.getRoomCode)
+      } else if (ev.key === 'p' || ev.key === 'm') {
+        await connection.invoke('ChangePause', this.getRoomCode)
+      } else if (ev.key === 'r' || ev.key === 'R') {
+        await connection.invoke('ChangeRotate', this.getRoomCode)
+      }
+    },
+    async setSync () {
+      await connection.on('ChangeVideoTime', (currentTime: number) => {
+        const videoEl = this.$refs.videoElement as HTMLVideoElement
+        if (this.decimalAdjust(tempTime, -1) !== this.decimalAdjust(currentTime, -1)) {
+          videoEl.currentTime = currentTime
+        }
+      })
+      await connection.on('VideoChanged', async () => {
+        await this.updateVideo()
+      })
+      await connection.on('PauseChanged', (isPause: boolean) => {
+        const videoEl = this.$refs.videoElement as HTMLVideoElement
+        if (isPause) {
+          videoEl.pause()
+        } else {
+          videoEl.play()
+        }
+      })
+      await connection.on('RotateChanged', (rotate: number) => {
+        const videoEl = this.$refs.videoElement as HTMLVideoElement
+        videoEl.style.transform = `rotate(${rotate}deg)`
+      })
+    },
+    async updateVideo () {
+      currentContent = (await contentCollectorMethod.getContentInfo(this.getRoomCode)).data
+      this.updateCurrentContentInfo()
+      this.updateContentLink()
+      this.setVideoSize()
     },
     updateCurrentContentInfo () {
       this.currentContentInfo.users = currentContent.users.map((x: any) => {
@@ -90,66 +126,12 @@ export default defineComponent({
       this.currentContentInfo.accompanyingCommentary = currentContent.accompanyingCommentary
       this.currentContentInfo.number = currentContent.number
     },
-    buildContentLink (currentContent: any) : string {
-      return `${systemConstants.baseURL}${currentContent.contentPath}`
+    updateContentLink () {
+      this.contentLink = `${systemConstants.baseURL}${currentContent.contentPath}`
     },
-    log (message: string) {
-      this.logMessages.push({ id: message, message: message })
-    },
-    async syncCurrentVideoTime () {
-      let tempTime = 0
-      const videoEl = this.$refs.videoElement as HTMLVideoElement
-      await connection.on('ChangeVideoTime', (currentTime: number) => {
-        if (this.decimalAdjust(tempTime, -1) !== this.decimalAdjust(currentTime, -1)) {
-          videoEl.currentTime = currentTime
-        }
-      })
-      videoEl.addEventListener('seeked', async ev => {
-        tempTime = videoEl.currentTime
-        await connection.invoke('ChangeVideoTime', tempTime)
-      })
-    },
-    async syncSwitchVideo () {
-      await connection.on('SwitchVideo', (direction: string) => {
-        const videoEl = this.$refs.videoElement as HTMLVideoElement
-        videoEl.volume = this.volume
-        if (direction === 'next') {
-          if (this.contentCursor + 1 === contents.length) {
-            this.contentCursor = 0
-          } else {
-            this.contentCursor++
-          }
-        } else if (direction === 'prev') {
-          if (this.contentCursor - 1 < 0) {
-            this.contentCursor = contents.length - 1
-          } else {
-            this.contentCursor--
-          }
-        }
-
-        currentContent = contents[this.contentCursor]
-        this.contentLink = this.buildContentLink(contents[this.contentCursor])
-        this.setVideoSize(contents[this.contentCursor])
-        this.updateCurrentContentInfo()
-      })
-    },
-    setVideoSize (content: any) {
+    setVideoSize () {
       const clientHeight = document.body.clientHeight
-      this.maxWidth = `${((clientHeight / content.height) * content.width)}px`
-    },
-    async syncPauseVideo () {
-      const videoEl = this.$refs.videoElement as HTMLVideoElement
-      await connection.on('PauseVideo', (isPaused: number) => {
-        if (isPaused) {
-          videoEl.pause()
-        } else {
-          videoEl.play()
-        }
-      })
-    },
-    setVolumeEvent () {
-      const videoEl = this.$refs.videoElement as HTMLVideoElement
-      videoEl.onvolumechange = ev => { this.volume = videoEl.volume }
+      this.maxWidth = `${((clientHeight / currentContent.height) * currentContent.width)}px`
     },
     decimalAdjust (value: any, exp: any) {
       if (typeof exp === 'undefined' || +exp === 0) {
@@ -164,6 +146,9 @@ export default defineComponent({
       value = Math.floor(+(value[0] + 'e' + (value[1] ? (+value[1] - exp) : -exp)))
       value = value.toString().split('e')
       return +(value[0] + 'e' + (value[1] ? (+value[1] + exp) : exp))
+    },
+    log (message: string) {
+      this.logMessages.push({ id: message, message: message })
     }
   }
 })

@@ -7,6 +7,16 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('../views/HomeView.vue')
   },
   {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/LoginView.vue')
+  },
+  {
+    path: '/content-room',
+    name: 'content-room',
+    component: () => import('../views/ContentViewerRoom.vue')
+  },
+  {
     path: '/content-viewer',
     name: 'content-viewer',
     component: () => import('../views/ContentViewer.vue')
