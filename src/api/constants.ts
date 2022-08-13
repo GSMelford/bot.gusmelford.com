@@ -1,6 +1,6 @@
 const systemConstants = {
   systemName: 'GusMelfordBot',
-  baseURL: 'https://localhost:44367/'
+  baseURL: 'https://bot.gusmelford.com/core/'
 }
 
 export { systemConstants }
