@@ -9,7 +9,15 @@
         <GusButton class="common-button" text="Coming soon"></GusButton>
         <GusButton class="common-button" text="Coming soon"></GusButton>
         <GusButton class="common-button" text="Coming soon"></GusButton>
+        <GusButton class="common-button" text="Log out" @click="doLogout"></GusButton>
       </div>
+    </div>
+    <div class="dashboard-container">
+      <h1 class="welcome-text">Welcome back, {{userFullName}}</h1>
+      <h3 class="welcome-text"><i>Dashboard coming soon...</i></h3>
+      <video autoplay controls class="dashboard-video">
+        <source src="resources/dashboard.mp4">
+      </video>
     </div>
   </div>
 </template>
@@ -19,20 +27,31 @@ import { defineComponent } from 'vue'
 import GusButton from '@/components/buttons/gusButton.vue'
 import GusRainbowButton from '@/components/buttons/gusRainbowButton.vue'
 import GusSimpleText from '@/components/texts/gusSimpleText.vue'
+import { mapActions, mapGetters } from 'vuex'
 
 export default defineComponent({
   name: 'HomeView',
   components: { GusRainbowButton, GusButton, GusSimpleText },
   data () {
     return {
+      userFullName: '',
       systemName: '',
       contentCount: 0,
       contentDurationMinutes: 0
     }
   },
+  computed: mapGetters(['getUserFullName']),
+  created () {
+    this.userFullName = this.getUserFullName
+  },
   methods: {
+    ...mapActions(['logout']),
     goToContentRoom () {
       this.$router.push('content-room')
+    },
+    doLogout () {
+      this.logout()
+      this.$router.push('login')
     }
   }
 })
@@ -45,16 +64,30 @@ export default defineComponent({
   width: 100vw;
   height: 100vh;
   gap: 10px;
-  grid-template-columns: 256px 1fr 256px;
+  grid-template-columns: 256px 1fr;
   grid-template-rows: 1fr 64px;
   grid-template-areas:
-    'menu-container dashboard'
+    'menu-container dashboard-container'
     'footer footer'
 }
 
 .menu-container {
+  grid-area: menu-container;
   margin: 10px;
   text-align: center;
+}
+
+.welcome-text {
+  color: snow;
+}
+
+.dashboard-container {
+  margin: 10px;
+  grid-area: dashboard-container;
+}
+
+.dashboard-video {
+  width: 100%;
 }
 
 .common-button {

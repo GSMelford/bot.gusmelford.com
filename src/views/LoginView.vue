@@ -4,7 +4,7 @@
       <h2>Welcom to GusMelfordBot!</h2>
       <input v-model="telegramId" type="text" placeholder="TelegramId" required>
       <input v-model="password" type="password" placeholder="Password" required>
-      <GusButton text="Login"></GusButton>
+      <GusButton text="Login" @click="doLogin"></GusButton>
     </div>
   </div>
 </template>
@@ -12,6 +12,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import GusButton from '@/components/buttons/gusButton.vue'
+import { mapActions } from 'vuex'
 
 export default defineComponent({
   name: 'LoginView',
@@ -23,6 +24,15 @@ export default defineComponent({
     }
   },
   methods: {
+    ...mapActions(['login']),
+    async doLogin () {
+      const isLoginSuccessfully = await this.login({ telegramId: this.telegramId, password: this.password })
+      if (isLoginSuccessfully) {
+        this.$router.push('home')
+      } else {
+        alert('Wrong login or password')
+      }
+    }
   }
 })
 </script>
