@@ -9,5 +9,9 @@ export const contentCollectorMethod = {
   async createRoom (isViewed: boolean): Promise<AxiosResponse> {
     const url = `api/content-collector/room?isViewed=${isViewed}`
     return await httpClient.post(url)
+  },
+  async markContentAsViewed (contentId: boolean): Promise<AxiosResponse> {
+    const url = `api/content-collector/mark-content-as-viewed?contentId=${contentId}`
+    return await httpClient.patch(url)
   }
 }

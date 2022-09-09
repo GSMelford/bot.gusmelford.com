@@ -80,6 +80,7 @@ export default defineComponent({
     },
     async onKeyDown (ev: any) {
       if (ev.key === 'ArrowRight' || ev.key === 'd' || ev.key === '>') {
+        await contentCollectorMethod.markContentAsViewed(currentContent.id)
         await connection.invoke('NextContent', this.getRoomCode)
       } else if (ev.key === 'ArrowLeft' || ev.key === 'a' || ev.key === '<') {
         await connection.invoke('PrevContent', this.getRoomCode)
