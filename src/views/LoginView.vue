@@ -1,10 +1,9 @@
 <template>
   <div class="main-container">
     <div class="login-form">
+      <h2>Welcom to GusMelfordBot!</h2>
       <input v-model="telegramId" type="text" placeholder="TelegramId" required>
       <input v-model="password" type="password" placeholder="Password" required>
-    </div>
-    <div>
       <GusButton text="Login"></GusButton>
     </div>
   </div>
@@ -57,6 +56,17 @@ body{
   backdrop-filter: blur(10px);
   border: 2px solid rgba(255, 255, 255, 0.1);
   padding: 50px 35px;
+}
+
+.login-form {
+  text-align: center;
+}
+
+input {
+  text-align: center;
+  width: 80%;
+  margin: 10px;
+  height: 32px;
 }
 
 </style>
