@@ -4,7 +4,9 @@ export default {
   state: {
     accessToken: localStorage.getItem('accessToken') || null,
     userRole: localStorage.getItem('userRole') || null,
-    userFullName: localStorage.getItem('userFullName') || null
+    userFullName: localStorage.getItem('userFullName') || null,
+    refreshToken: localStorage.getItem('refreshToken') || null,
+    tokenExpiredIn: localStorage.getItem('tokenExpiredIn') || null
   },
   getters: {
     getToken (state: any): string {
@@ -18,6 +20,12 @@ export default {
     },
     getUserFullName (state: any): string {
       return state.userFullName
+    },
+    getRefreshToken (state: any): string {
+      return state.refreshToken
+    },
+    getTokenExpiredIn (state: any): string {
+      return state.tokenExpiredIn
     }
   },
   mutations: {
@@ -33,6 +41,14 @@ export default {
       state.userFullName = userFullName
       localStorage.setItem('userFullName', userFullName)
     },
+    setRefreshToken (state: any, refreshToken: string) {
+      state.refreshToken = refreshToken
+      localStorage.setItem('refreshToken', refreshToken)
+    },
+    setTokenExpiredIn (state: any, tokenExpiredIn: string) {
+      state.tokenExpiredIn = tokenExpiredIn
+      localStorage.setItem('tokenExpiredIn', tokenExpiredIn)
+    },
     deleteAccessToken (state: any) {
       state.accessToken = null
       localStorage.removeItem('accessToken')
@@ -44,6 +60,14 @@ export default {
     deleteUserFullName (state: any) {
       state.userFullName = null
       localStorage.removeItem('userFullName')
+    },
+    deleteRefreshToken (state: any) {
+      state.refreshToken = null
+      localStorage.removeItem('refreshToken')
+    },
+    deleteTokenExpiredIn (state: any) {
+      state.tokenExpiredIn = null
+      localStorage.removeItem('tokenExpiredIn')
     }
   },
   actions: {
@@ -53,6 +77,8 @@ export default {
         context.commit('setAccessToken', response.data.accessToken)
         context.commit('setUserRole', response.data.role)
         context.commit('setUserFullName', response.data.userFullName)
+        context.commit('setRefreshToken', response.data.refreshToken)
+        context.commit('setTokenExpiredIn', response.data.expiredIn)
         return true
       }
       return false
@@ -61,6 +87,29 @@ export default {
       context.commit('deleteAccessToken')
       context.commit('deleteUserRole')
       context.commit('deleteUserFullName')
+      context.commit('deleteRefreshToken')
+      context.commit('deleteTokenExpiredIn')
+    },
+    async refreshTokenIfExpired (context: any): Promise<boolean> {
+      if (Date.parse(context.getters.getTokenExpiredIn) <= Date.now()) {
+        let response
+        try {
+          response = await authMethod.refreshToken({
+            accessToken: context.getters.getToken,
+            refreshToken: context.getters.getRefreshToken
+          })
+          context.commit('setAccessToken', response.data.accessToken)
+          context.commit('setUserRole', response.data.role)
+          context.commit('setUserFullName', response.data.userFullName)
+          context.commit('setRefreshToken', response.data.refreshToken)
+          context.commit('setTokenExpiredIn', response.data.expiredIn)
+          return true
+        } catch (AxiosError) {
+          console.log('401')
+          return false
+        }
+      }
+      return true
     }
   }
 }

@@ -15,9 +15,11 @@
     <div class="dashboard-container">
       <h1 class="welcome-text">Welcome back, {{userFullName}}</h1>
       <h3 class="welcome-text"><i>Dashboard coming soon...</i></h3>
-      <video autoplay controls class="dashboard-video">
-        <source src="resources/dashboard.mp4">
-      </video>
+      <div class="dashboard-video-container">
+        <video autoplay controls class="dashboard-video" ref="videoElement">
+          <source src="resources/dashboard.mp4">
+        </video>
+      </div>
     </div>
   </div>
 </template>
@@ -43,6 +45,10 @@ export default defineComponent({
   computed: mapGetters(['getUserFullName']),
   created () {
     this.userFullName = this.getUserFullName
+  },
+  mounted () {
+    const videoEl = this.$refs.videoElement as HTMLVideoElement
+    videoEl.volume = 0.1
   },
   methods: {
     ...mapActions(['logout']),
@@ -84,10 +90,11 @@ export default defineComponent({
 .dashboard-container {
   margin: 10px;
   grid-area: dashboard-container;
+  text-align: center;
 }
 
 .dashboard-video {
-  width: 100%;
+  width: 80%;
 }
 
 .common-button {

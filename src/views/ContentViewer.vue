@@ -27,10 +27,7 @@ import { systemConstants } from '@/api/constants'
 import { contentCollectorMethod } from '@/api/contentCollector/contentCollectorRequest'
 import { mapGetters } from 'vuex'
 
-const connection = new HubConnectionBuilder()
-  .withUrl(`${systemConstants.baseURL}content-viewer-hub`)
-  .build()
-
+let connection: any
 let tempTime = 0
 let currentContent: any
 
@@ -54,8 +51,11 @@ export default defineComponent({
       }
     }
   },
-  computed: mapGetters(['getRoomCode']),
+  computed: mapGetters(['getRoomCode', 'getToken']),
   mounted: async function () {
+    connection = new HubConnectionBuilder()
+      .withUrl(`${systemConstants.baseURL}content-viewer-hub`, { accessTokenFactory: () => this.getToken })
+      .build()
     this.systemName = systemConstants.systemName + ' ' + 'ContentCollector'
     await this.setEvents()
     await this.setSync()
@@ -82,8 +82,10 @@ export default defineComponent({
       if (ev.key === 'ArrowRight' || ev.key === 'd' || ev.key === '>') {
         await contentCollectorMethod.markContentAsViewed(currentContent.id)
         await connection.invoke('NextContent', this.getRoomCode)
+        this.changeRotate(0)
       } else if (ev.key === 'ArrowLeft' || ev.key === 'a' || ev.key === '<') {
         await connection.invoke('PrevContent', this.getRoomCode)
+        this.changeRotate(0)
       } else if (ev.key === 'p' || ev.key === 'm') {
         await connection.invoke('ChangePause', this.getRoomCode)
       } else if (ev.key === 'r' || ev.key === 'R') {
@@ -109,9 +111,12 @@ export default defineComponent({
         }
       })
       await connection.on('RotateChanged', (rotate: number) => {
-        const videoEl = this.$refs.videoElement as HTMLVideoElement
-        videoEl.style.transform = `rotate(${rotate}deg)`
+        this.changeRotate(rotate)
       })
+    },
+    changeRotate (rotate: number) {
+      const videoEl = this.$refs.videoElement as HTMLVideoElement
+      videoEl.style.transform = `rotate(${rotate}deg)`
     },
     async updateVideo () {
       currentContent = (await contentCollectorMethod.getContentInfo(this.getRoomCode)).data

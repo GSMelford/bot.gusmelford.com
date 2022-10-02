@@ -8,6 +8,7 @@
         <GusSimpleText v-text="user"></GusSimpleText>
       </div>
       <GusButton class="common-button" text="Let's watch!" @click="goToViewer"></GusButton>
+      <GusButton class="common-button" text="Share" @click="saveShareLink"></GusButton>
     </div>
     <div v-if="!isRoomCreated">
       <GusButton class="common-button" text="Create Room" @click="createRoom"></GusButton>
@@ -20,16 +21,14 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { HubConnectionBuilder } from '@microsoft/signalr'
+import { HttpTransportType, HubConnectionBuilder } from '@microsoft/signalr'
 import { systemConstants } from '@/api/constants'
 import GusButton from '@/components/buttons/gusButton.vue'
 import GusSimpleText from '@/components/texts/gusSimpleText.vue'
 import { contentCollectorMethod } from '@/api/contentCollector/contentCollectorRequest'
-import { mapActions } from 'vuex'
+import { mapActions, mapGetters } from 'vuex'
 
-const connection = new HubConnectionBuilder()
-  .withUrl(`${systemConstants.baseURL}content-viewer-hub`)
-  .build()
+let connection: any
 
 export default defineComponent({
   name: 'ContentViewerRoom',
@@ -41,9 +40,14 @@ export default defineComponent({
       users: Array<string>()
     }
   },
+  computed: mapGetters(['getToken']),
   async mounted () {
+    connection = new HubConnectionBuilder()
+      .withUrl(`${systemConstants.baseURL}content-viewer-hub`, { accessTokenFactory: () => this.getToken, skipNegotiation: true, transport: HttpTransportType.WebSockets })
+      .build()
     await this.sync()
     await connection.start()
+    this.autoJoin()
   },
   methods: {
     ...mapActions(['saveRoomCode']),
@@ -60,12 +64,12 @@ export default defineComponent({
     async sync () {
       await connection.on('UserJoined', (info: any) => {
         if (this.roomCode === info.roomCode) {
-          this.users = info.users
+          this.users = info.users.map((x: any) => `Ready: ${x.isReady} | ${x.firstName} ${x.lastName}`)
         }
       })
       await connection.on('UserLeft', (info: any) => {
         if (this.roomCode === info.roomCode) {
-          this.users = info.users
+          this.users = info.users.map((x: any) => `Ready: ${x.isReady} | ${x.firstName} ${x.lastName}`)
         }
       })
       await connection.on('StartWatch', (roomCode: string) => {
@@ -73,6 +77,16 @@ export default defineComponent({
           this.$router.push('content-viewer')
         }
       })
+    },
+    autoJoin () {
+      const roomCode = new URLSearchParams(window.location.search).get('roomCode')
+      if (roomCode !== '' && roomCode !== null) {
+        this.roomCode = roomCode
+        this.joinToRoom(roomCode)
+      }
+    },
+    async saveShareLink () {
+      await navigator.clipboard.writeText(`https://bot.gusmelford.com/content-room?roomCode=${this.roomCode}`)
     },
     async goToViewer () {
       await connection.invoke('StartWatch', this.roomCode)

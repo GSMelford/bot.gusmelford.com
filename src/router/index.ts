@@ -13,15 +13,6 @@ const routes: Array<RouteRecordRaw> = [
     }
   },
   {
-    path: '/home',
-    name: 'home',
-    component: () => import('../views/HomeView.vue'),
-    meta: {
-      title: 'Home',
-      requiresAuth: true
-    }
-  },
-  {
     path: '/login',
     name: 'login',
     component: () => import('../views/LoginView.vue'),
@@ -54,14 +45,15 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const nearestWithTitle = to.matched.slice().reverse().find((r) => r.meta && r.meta.title)
   document.title = `${nearestWithTitle?.meta.title || 'GusMelfordBot'}`
   httpClient.defaults.headers.common.Authorization = `Bearer ${store.getters.getToken}`
   if (to.meta.requiresAuth) {
-    if (store.getters.getAuthState) {
+    if (store.getters.getAuthState && await store.dispatch('refreshTokenIfExpired')) {
       next()
     } else {
+      await store.dispatch('logout')
       next({ name: 'login' })
     }
   } else {

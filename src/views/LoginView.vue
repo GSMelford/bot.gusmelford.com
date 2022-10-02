@@ -28,7 +28,7 @@ export default defineComponent({
     async doLogin () {
       const isLoginSuccessfully = await this.login({ telegramId: this.telegramId, password: this.password })
       if (isLoginSuccessfully) {
-        this.$router.push('home')
+        this.$router.push('/')
       } else {
         alert('Wrong login or password')
       }
