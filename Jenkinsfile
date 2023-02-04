@@ -7,13 +7,6 @@ pipeline {
         disableConcurrentBuilds()
     }
 
-    environment {
-        CONTAINER_NAME = "bot.gusmelford.com"
-        DOCKER_CONTAINER_TAG = "latest"
-        DOCKER_REPO = "gsmelford"
-        PORT = "5690"
-    }
-
     stages {
         stage("Yarn install") {
             steps {
@@ -26,13 +19,13 @@ pipeline {
         stage("Yarn build") {
             steps {
                 echo "=== pushing image ==="
-                sh "sudo yarn build -S $SUDO_PASSWORD"
+                sh "sudo yarn build"
             }
         }
         stage("Deploy") {
             steps {
                 echo "=== deploying ==="
-                sh "sudo cp -ra ./dist/. /var/www/BotGusMelfordCom"
+                sh "sudo cp -ra ./dist/. /var/www/AppGusMelfordCom"
             }
         }
         stage("Nginx restart") {
