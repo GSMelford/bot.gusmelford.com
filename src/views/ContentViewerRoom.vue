@@ -86,7 +86,7 @@ export default defineComponent({
       }
     },
     async saveShareLink () {
-      await navigator.clipboard.writeText(`https://bot.gusmelford.com/content-room?roomCode=${this.roomCode}`)
+      await navigator.clipboard.writeText(`https://app.gusmelford.com/content-room?roomCode=${this.roomCode}`)
     },
     async goToViewer () {
       await connection.invoke('StartWatch', this.roomCode)
