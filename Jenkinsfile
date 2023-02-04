@@ -30,7 +30,7 @@ pipeline {
         }
         stage("Nginx restart") {
             steps {
-                sh "docker restart nginx"
+                sh "sudo docker restart nginx"
             }
         }
     }
